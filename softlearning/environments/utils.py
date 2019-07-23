@@ -25,6 +25,17 @@ except ModuleNotFoundError as e:
     print("Warning: robosuite package not found. Run `pip install robosuite`"
           " to use robosuite environments.")
 
+try:
+    # roboschool registers its gym envs at import
+    import roboschool  # noqa
+    ADAPTERS['roboschool'] = GymAdapter
+except ModuleNotFoundError as e:
+    if 'roboschool' not in e.msg:
+        raise
+
+    print("Warning: roboschool package not found. Run `pip install roboschool`"
+          " to use roboschool environments.")
+
 UNIVERSES = set(ADAPTERS.keys())
 
 

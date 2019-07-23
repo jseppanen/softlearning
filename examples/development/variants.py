@@ -156,6 +156,21 @@ NUM_EPOCHS_PER_UNIVERSE_DOMAIN_TASK = {
     },
     'robosuite': {
         DEFAULT_KEY: 200,
+    },
+    'roboschool': {
+        DEFAULT_KEY: 200,
+        'RoboschoolHopper': {
+            DEFAULT_KEY: int(1e3),
+        },
+        'RoboschoolHalfCheetah': {
+            DEFAULT_KEY: int(3e3),
+        },
+        'RoboschoolWalker2d': {
+            DEFAULT_KEY: int(3e3),
+        },
+        'RoboschoolAnt': {
+            DEFAULT_KEY: int(3e3),
+        },
     }
 }
 

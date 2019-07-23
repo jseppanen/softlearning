@@ -77,6 +77,7 @@ psutil==5.4.8
 ray[rllib,debug]==0.7.1
 redis==3.0.1
 requests==2.20.1
+roboschool==1.0.48
 robosuite==0.1.0
 rsa==3.4.2
 ruamel-yaml==0.15.46
