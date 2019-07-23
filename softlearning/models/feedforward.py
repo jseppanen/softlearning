@@ -7,10 +7,20 @@ from softlearning.utils.tensorflow import nest
 
 
 tfk = tf.keras
+tfki = tf.keras.initializers
 tfkl = tf.keras.layers
 tfpl = tfp.layers
 tfd = tfp.distributions
 tfb = tfp.bijectors
+
+
+_seed = 0
+
+
+def next_seed():
+    global _seed
+    _seed += 1
+    return _seed
 
 
 def feedforward_model(hidden_layer_sizes,
@@ -31,11 +41,17 @@ def feedforward_model(hidden_layer_sizes,
         tfkl.Lambda(cast_and_concat),
         *[
             tf.keras.layers.Dense(
-                hidden_layer_size, *args, activation=activation, **kwargs)
+                hidden_layer_size, *args,
+                activation=activation,
+                kernel_initializer=tfki.glorot_uniform(seed=next_seed()),
+                **kwargs)
             for hidden_layer_size in hidden_layer_sizes
         ],
         tf.keras.layers.Dense(
-            output_size, *args, activation=output_activation, **kwargs)
+            output_size, *args,
+            activation=output_activation,
+            kernel_initializer=tfki.glorot_uniform(seed=next_seed()),
+            **kwargs)
     ), name=name)
 
     return model

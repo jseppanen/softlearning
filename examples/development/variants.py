@@ -429,8 +429,9 @@ def get_variant_spec_base(universe, domain, task, policy, algorithm):
             }
         },
         'run_params': {
-            'seed': tune.sample_from(
-                lambda spec: np.random.randint(0, 10000)),
+            # 'seed': tune.sample_from(
+            #     lambda spec: np.random.randint(0, 10000)),
+            'seed': 1337,
             'checkpoint_at_end': True,
             'checkpoint_frequency': tune.sample_from(get_checkpoint_frequency),
             'checkpoint_replay_pool': False,

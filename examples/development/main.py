@@ -20,6 +20,8 @@ from examples.instrument import run_example_local
 
 tf.compat.v1.disable_eager_execution()
 
+from softlearning.trace import TRACE
+
 
 class ExperimentRunner(tune.Trainable):
     def _setup(self, variant):
@@ -50,13 +52,25 @@ class ExperimentRunner(tune.Trainable):
             if 'evaluation' in environment_params
             else training_environment)
 
+        # ensure reproduceable runs
+        training_environment.seed(variant['run_params']['seed'])
+        training_environment.action_space.seed(variant['run_params']['seed'])
+        evaluation_environment.seed(variant['run_params']['seed'])
+        evaluation_environment.action_space.seed(variant['run_params']['seed'])
+
         replay_pool = self.replay_pool = (
             get_replay_pool_from_variant(variant, training_environment))
         sampler = self.sampler = get_sampler_from_variant(variant)
         Qs = self.Qs = get_Q_function_from_variant(
             variant, training_environment)
+        TRACE(Q0_layer0_weights=Qs[0].get_weights()[0])
+        TRACE(Q0_layer0_bias=Qs[0].get_weights()[1])
+        TRACE(Q1_layer0_weights=Qs[1].get_weights()[0])
+        TRACE(Q1_layer0_bias=Qs[1].get_weights()[1])
         policy = self.policy = get_policy_from_variant(
             variant, training_environment)
+        TRACE(policy_layer0_weights=policy.get_weights()[0])
+        TRACE(policy_layer0_bias=policy.get_weights()[1])
 
         initial_exploration_policy = self.initial_exploration_policy = (
             get_policy_from_params(

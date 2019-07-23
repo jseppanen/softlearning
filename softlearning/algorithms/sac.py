@@ -9,6 +9,8 @@ from flatten_dict import flatten
 from softlearning.models.utils import flatten_input_structure
 from .rl_algorithm import RLAlgorithm
 
+from ..trace import TRACE
+
 
 def td_target(reward, discount, next_value):
     return reward + discount * next_value
@@ -291,8 +293,10 @@ class SAC(RLAlgorithm):
     def _do_training(self, iteration, batch):
         """Runs the operations for updating training and target ops."""
 
+        TRACE(iteration=iteration, batch=batch)
         feed_dict = self._get_feed_dict(iteration, batch)
-        self._session.run(self._training_ops, feed_dict)
+        res = self._session.run(self._training_ops, feed_dict)
+        TRACE(training_ops=res)
 
         if iteration % self._target_update_interval == 0:
             # Run target ops here.
