@@ -346,15 +346,28 @@ class SAC(RLAlgorithm):
     def _do_training(self, iteration, batch):
         """Runs the operations for updating training and target ops."""
 
-        TRACE(iteration=iteration, batch=batch)
+        TRACE(iteration=iteration)
         import pickle
+        with open(f'repro/weights{iteration}.pkl', 'wb') as f:
+            weights = {
+                'Q_weights': (
+                    self._Qs[0].get_weights(),
+                    self._Qs[1].get_weights(),
+                ),
+                'Q_target_weights': (
+                    self._Q_targets[0].get_weights(),
+                    self._Q_targets[1].get_weights(),
+                ),
+                'policy_weights': self._policy.get_weights(),
+                # 'log_alpha': self._session.run(self._log_alpha),
+            }
+            pickle.dump(weights, f)
         with open(f'repro/batch{iteration}.pkl', 'wb') as f:
             pickle.dump(batch, f)
         feed_dict = self._get_feed_dict(iteration, batch)
         res = self._session.run(self._training_ops, feed_dict)
         with open(f'repro/values{iteration}.pkl', 'wb') as f:
             pickle.dump(dict(res), f)
-        TRACE(training_ops=res)
 
         if iteration % self._target_update_interval == 0:
             # Run target ops here.
