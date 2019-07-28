@@ -78,6 +78,13 @@ class SAC(RLAlgorithm):
 
         self._Qs = Qs
         self._Q_targets = tuple(tf.keras.models.clone_model(Q) for Q in Qs)
+        import pickle
+        with open(f'repro/init.pkl', 'wb') as f:
+            inits = {
+                'Q_weights': (Qs[0].get_weights(), Qs[1].get_weights()),
+                'policy_weights': policy.get_weights(),
+            }
+            pickle.dump(inits, f)
 
         self._pool = pool
         self._plotter = plotter
@@ -114,7 +121,12 @@ class SAC(RLAlgorithm):
             name: self._placeholders['next_observations'][name]
             for name in self._policy.observation_keys
         })
-        next_actions = self._policy.actions(policy_inputs)
+        # XXX repro
+        #next_actions = self._policy.actions(policy_inputs)
+        next_action_latents = self._policy.latents_model(policy_inputs)
+        next_actions = self._policy.actions_model_for_fixed_latents(
+            [*policy_inputs, next_action_latents])
+
         next_log_pis = self._policy.log_pis(policy_inputs, next_actions)
 
         next_Q_observations = {
@@ -135,7 +147,16 @@ class SAC(RLAlgorithm):
             discount=self._discount,
             next_value=(1 - terminals) * next_values)
 
-        return tf.stop_gradient(Q_target)
+        # XXX tracing
+        tracing_ops = {
+            'Q_target_next_observations': tf.stop_gradient(policy_inputs),
+            'Q_target_next_action_latents': tf.stop_gradient(next_action_latents),
+            'Q_target_next_actions': tf.stop_gradient(next_actions),
+            'Q_target_next_log_pis': tf.stop_gradient(next_log_pis),
+            'Q_target_next_Q_values': tf.stop_gradient(next_Qs_values),
+            'Q_target_next_values': tf.stop_gradient(next_values),
+        }
+        return tf.stop_gradient(Q_target), tracing_ops
 
     def _init_critic_update(self):
         """Create minimization operation for critic Q-function.
@@ -147,8 +168,11 @@ class SAC(RLAlgorithm):
         See Equations (5, 6) in [1], for further information of the
         Q-function update rule.
         """
-        Q_target = self._get_Q_target()
+        Q_target, Q_target_tracing_ops = self._get_Q_target()
         assert Q_target.shape.as_list() == [None, 1]
+
+        # XXX tracing
+        self._training_ops.update(Q_target_tracing_ops)
 
         Q_observations = {
             name: self._placeholders['observations'][name]
@@ -162,6 +186,14 @@ class SAC(RLAlgorithm):
             tf.compat.v1.losses.mean_squared_error(
                 labels=Q_target, predictions=Q_value, weights=0.5)
             for Q_value in Q_values)
+
+        # XXX tracing
+        self._training_ops.update({
+            'Q_target': Q_target,
+            'Q_inputs': tuple(Q_inputs),
+            'Q_values': Q_values,
+            'Q_losses': Q_losses,
+        })
 
         self._Q_optimizers = tuple(
             tf.compat.v1.train.AdamOptimizer(
@@ -294,8 +326,13 @@ class SAC(RLAlgorithm):
         """Runs the operations for updating training and target ops."""
 
         TRACE(iteration=iteration, batch=batch)
+        import pickle
+        with open(f'repro/batch{iteration}.pkl', 'wb') as f:
+            pickle.dump(batch, f)
         feed_dict = self._get_feed_dict(iteration, batch)
         res = self._session.run(self._training_ops, feed_dict)
+        with open(f'repro/values{iteration}.pkl', 'wb') as f:
+            pickle.dump(dict(res), f)
         TRACE(training_ops=res)
 
         if iteration % self._target_update_interval == 0:
