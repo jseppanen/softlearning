@@ -246,6 +246,11 @@ class SAC(RLAlgorithm):
             alpha_loss = -tf.reduce_mean(
                 log_alpha * tf.stop_gradient(log_pis + self._target_entropy))
 
+            # XXX tracing
+            self._training_ops.update({
+                'alpha_loss': tf.stop_gradient(alpha_loss),
+            })
+
             self._alpha_optimizer = tf.compat.v1.train.AdamOptimizer(
                 self._policy_lr, name='alpha_optimizer')
             self._alpha_train_op = self._alpha_optimizer.minimize(
