@@ -234,6 +234,14 @@ class SAC(RLAlgorithm):
             initializer=0.0)
         alpha = tf.exp(log_alpha)
 
+        # XXX tracing
+        self._training_ops.update({
+            'policy_observations': tf.stop_gradient(policy_inputs),
+            'policy_actions': tf.stop_gradient(actions),
+            'policy_log_pis': tf.stop_gradient(log_pis),
+            'policy_log_alpha': tf.stop_gradient(log_alpha),
+        })
+
         if isinstance(self._target_entropy, Number):
             alpha_loss = -tf.reduce_mean(
                 log_alpha * tf.stop_gradient(log_pis + self._target_entropy))
@@ -286,6 +294,14 @@ class SAC(RLAlgorithm):
         policy_train_op = self._policy_optimizer.minimize(
             loss=policy_loss,
             var_list=self._policy.trainable_variables)
+
+        # XXX tracing
+        self._training_ops.update({
+            'policy_Q_log_targets': tf.stop_gradient(Q_log_targets),
+            'policy_min_Q_log_target': tf.stop_gradient(min_Q_log_target),
+            'policy_kl_losses': tf.stop_gradient(policy_kl_losses),
+            'policy_loss': tf.stop_gradient(policy_loss),
+        })
 
         self._training_ops.update({'policy_train_op': policy_train_op})
 
