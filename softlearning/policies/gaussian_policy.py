@@ -87,7 +87,13 @@ class GaussianPolicy(LatentSpacePolicy):
             lambda batch_size: base_distribution.sample(batch_size, seed=1)
         )(batch_size)
 
+        # XXX repro, separate seeds for target Q network and policy network
+        latents2 = tf.keras.layers.Lambda(
+            lambda batch_size: base_distribution.sample(batch_size, seed=2)
+        )(batch_size)
+
         self.latents_model = tf.keras.Model(self.condition_inputs, latents)
+        self.latents2_model = tf.keras.Model(self.condition_inputs, latents2)
         self.latents_input = tf.keras.layers.Input(
             shape=output_shape, name='latents')
 

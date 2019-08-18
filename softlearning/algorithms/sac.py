@@ -223,7 +223,13 @@ class SAC(RLAlgorithm):
             name: self._placeholders['observations'][name]
             for name in self._policy.observation_keys
         })
-        actions = self._policy.actions(policy_inputs)
+
+        # XXX repro
+        #actions = self._policy.actions(policy_inputs)
+        action_latents = self._policy.latents2_model(policy_inputs)
+        actions = self._policy.actions_model_for_fixed_latents(
+            [*policy_inputs, action_latents])
+
         log_pis = self._policy.log_pis(policy_inputs, actions)
 
         assert log_pis.shape.as_list() == [None, 1]
@@ -237,6 +243,7 @@ class SAC(RLAlgorithm):
         # XXX tracing
         self._training_ops.update({
             'policy_observations': tf.stop_gradient(policy_inputs),
+            'policy_action_latents': tf.stop_gradient(action_latents),
             'policy_actions': tf.stop_gradient(actions),
             'policy_log_pis': tf.stop_gradient(log_pis),
             'policy_log_alpha': tf.stop_gradient(log_alpha),
